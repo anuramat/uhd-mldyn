@@ -1,4 +1,6 @@
-# 4.2 Poincare maps
+# Exercise 4
+
+## 4.2 Poincare maps
 
 When you have an n-dimensional system $x = f(x)$, a Surface of Section $S$ is an
 $(n-1)$--dimensional subspace, chosen such that for a trajectory of interest,
