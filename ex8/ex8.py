@@ -45,10 +45,12 @@ traj = solve_ivp(fun=lorenz, y0=(1, 1, 1), t_span=t_span, t_eval=t_eval).y.T
 # %%
 import matplotlib.pyplot as plt
 
-def plot_traj(traj):
+def plot_traj(traj, title=None):
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111, projection="3d")
     ax.plot(traj[:, 0], traj[:, 1], traj[:, 2], lw=0.5)
+    if title is not None:
+        plt.title(title)
     plt.show()
 
 plot_traj(traj)
@@ -119,10 +121,42 @@ for N in [lyapu_N * i // 3 for i in range(1,6)]:
     print('MSE for N=%d:' % N)
     print(fpe(model, traj, t_eval, N))
 
+
 # %% [markdown]
 # It's pointless to look past N=150, since we are reaching an MSE plateau, which is the upper bound given by the diameter of the attractor.
 
 # %% [markdown]
 # # 8.1.4
+
+# %% [markdown]
+# # 8.1.5
+
+# %%
+
+# %% [markdown]
+# # 8.1.6
+
+# %%
+def subset_test(n, order=6):  
+    model = ps.SINDy(
+        feature_library=ps.PolynomialLibrary(degree=order),
+    ).fit(
+        traj[:n,:],
+        t=dt,
+    )
+    traj_sim = model.simulate(traj[0, :], t_eval)
+    plot_traj(traj_sim, title='%d points, polynomials of degree %d' % (n, order))
+
+
+# %%
+for i in (100, 150):
+    subset_test(i, 6)
+
+# %%
+for i in (50,60,70):
+    subset_test(i, 2)
+
+# %% [markdown]
+# We can see that about 150 points is enough. For a second order polynomial library, we can get by with slightly less data, since we have less parameters to fit.
 
 # %%
