@@ -219,7 +219,7 @@ with torch.no_grad():
         preds.append(pred)
 preds = np.array(preds).reshape(-1, 3)
 evaluation = evaluation.numpy()
-mse = [(evaluation[i, :] - preds[i, :]).sum() for i in range(n_eval)]
+mse = [((evaluation[i, :] - preds[i, :]) ** 2).sum() for i in range(n_eval)]
 
 # %%
 tau = 1 / (0.00906)
