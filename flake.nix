@@ -7,24 +7,27 @@
       url = "github:numtide/flake-utils";
     };
   };
-  outputs = {
-    nixpkgs,
-    flake-utils,
-    ...
-  }:
+  outputs =
+    {
+      nixpkgs,
+      flake-utils,
+      ...
+    }:
     flake-utils.lib.eachDefaultSystem (
-      system: let
+      system:
+      let
         pkgs = import nixpkgs {
           inherit system;
           config = {
             allowUnfree = true;
           };
         };
-      in {
+      in
+      {
         devShell = pkgs.mkShell {
           buildInputs = [
-            (pkgs.python3.withPackages (python-pkgs:
-              with python-pkgs; [
+            (pkgs.python3.withPackages (
+              python-pkgs: with python-pkgs; [
                 pip
                 jupyter
                 jupytext
@@ -34,7 +37,9 @@
                 matplotlib
                 tqdm
                 pytest
-              ]))
+                pytorch
+              ]
+            ))
           ];
           shellHook = ''
             # Tells pip to put packages into $PIP_PREFIX instead of the usual locations.
