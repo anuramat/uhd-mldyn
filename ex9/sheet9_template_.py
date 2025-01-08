@@ -229,6 +229,7 @@ plt.plot(
     x,
     mse,
 )
+plt.show()
 
 # %%
 plt.title("MSE")
@@ -236,6 +237,7 @@ plt.plot(
     x[:100],
     mse[:100],
 )
+plt.show()
 
 # %% [markdown]
 # Because the attractor is chaotic.
