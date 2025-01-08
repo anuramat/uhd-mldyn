@@ -14,10 +14,13 @@
 # ---
 
 # %%
-import torch
-import torch.nn as nn
+from random import random
 from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import torch.nn as nn
+
 
 # torch.set_num_threads(1)
 
@@ -118,26 +121,21 @@ def train_RNN(rnn, output_layer, dataloader, n_epochs, print_every, lr=5e-4):
 
 
 # %%
-# set the parameters
-T_seq = 200  # seq length
-B = 32  # batchsize
-learning_rate = 5e-4  # you can play around with this setting
+def get_data(B=32, T_seq=200):
+    # load the data
+    X = torch.load("lorenz_data.pt")
 
-# load the data
-X = torch.load("lorenz_data.pt")
-print(X.size())
+    # initialize the dataset
+    dataset = CustomDataset(X, T_seq)
 
-# initialize the dataset
-dataset = CustomDataset(X, T_seq)
+    # initialize the dataloader
+    dataloader = BatchSampler(dataset, B)
 
-# initialize the dataloader
-dataloader = BatchSampler(dataset, B)
-xs, ys = dataloader()
-print(xs.size(), ys.size())
+    return dataloader
 
 
 # %%
-def make_model(epochs: int, hidden_size: int):
+def make_model(epochs: int, hidden_size: int, dataloader, lr=5e-4):
 
     rnn = nn.RNN(
         input_size=3, hidden_size=hidden_size, num_layers=1, nonlinearity="relu"
@@ -149,20 +147,23 @@ def make_model(epochs: int, hidden_size: int):
         output_layer,
         dataloader,
         n_epochs=epochs,
-        print_every=int(epochs / 10),
-        lr=learning_rate,
+        print_every=max(1, int(epochs / 10)),
+        lr=lr,
     )
 
-    return rnn, losses
+    return (rnn, output_layer), losses
 
 
 def make_losses(epochs: int, hidden_sizes: list[int]):
     losses = []
+    models = []
+    data = get_data()
     for s in hidden_sizes:
         print("*** training for size=%d ***" % s)
-        model, l = make_model(epochs, s)
+        model, l = make_model(epochs, s, data)
         losses.append((l, s))
-    return losses
+        models.append(model)
+    return losses, models
 
 
 def plot_losses(losses: list[tuple[list[float], int]]):
@@ -176,8 +177,91 @@ def plot_losses(losses: list[tuple[list[float], int]]):
     fig.show()
 
 
+# %% [markdown]
+# # 1.
+# No, since then the entire model would be linear even with non-unit depth, while dynamical system is nonlinear.
+
+# %% [markdown]
+# # 2.
+
 # %%
-losses = make_losses(2000, [3, 50, 150])
+epochs = 5000
+losses, models = make_losses(epochs, [3, 50, 150])
 
 # %%
 plot_losses(losses)
+
+# %% [markdown]
+# Increase in the number of neurons leads to better convergence, but at a certain point larger models get unstable.
+
+# %% [markdown]
+# # 3.
+
+# %%
+rnn, linear = models[-1]
+rnn.eval()
+linear.eval()
+n_points = 1000
+n_bootstrap = 100
+n_eval = n_points - n_bootstrap
+preds = get_data(1, n_points)()[0].reshape(n_points, -1)
+
+# %%
+bootstrap = preds[:n_bootstrap, :]
+evaluation = preds[n_bootstrap:, :]
+init = rnn(bootstrap)[1]
+pred = linear(init)
+preds = []
+with torch.no_grad():
+    for i in range(evaluation.shape[0]):
+        init = rnn(pred, init)[1]
+        pred = linear(init)
+        preds.append(pred)
+preds = np.array(preds).reshape(-1, 3)
+evaluation = evaluation.numpy()
+mse = [(evaluation[i, :] - preds[i, :]).sum() for i in range(n_eval)]
+
+# %%
+tau = 1 / (0.00906)
+x = [i * tau for i in range(len(mse))]
+plt.title("MSE")
+plt.plot(
+    x,
+    mse,
+)
+
+# %%
+plt.title("MSE")
+plt.plot(
+    x[:100],
+    mse[:100],
+)
+
+# %% [markdown]
+# Because the attractor is chaotic.
+
+# %% [markdown]
+# # 4.
+
+# %%
+ic = [1 + random() * 0.1 for _ in range(3)]
+pred = linear(init)
+preds = []
+init = None
+with torch.no_grad():
+    for i in range(100000):
+        init = rnn(pred, init)[1]
+        pred = linear(init)
+        preds.append(pred)
+preds = np.array(preds).reshape(-1, 3)
+
+# %%
+fig = plt.figure()
+ax = fig.add_subplot(111, projection="3d")
+x, y, z = preds[:, 0], preds[:, 1], preds[:, 2]
+ax.plot(x, y, z, lw=0.5)
+plt.title("Generated trajectory")
+plt.show()
+
+# %% [markdown]
+# Trajectory looks alright.
