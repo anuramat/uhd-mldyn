@@ -31,6 +31,7 @@
                 pip
                 jupyter
                 jupytext
+                jupyter-collaboration
                 numpy
                 scipy
                 scikit-learn
