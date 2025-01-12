@@ -30,6 +30,7 @@
               python-pkgs: with python-pkgs; [
                 pip
                 jupyter
+                nbclassic # for jupynium
                 jupytext
                 jupyter-collaboration
                 numpy
@@ -49,6 +50,8 @@
             export PYTHONPATH="$PIP_PREFIX/${pkgs.python3.sitePackages}:$PYTHONPATH"
             export PATH="$PIP_PREFIX/bin:$PATH"
             unset SOURCE_DATE_EPOCH
+            # for jupynium
+            export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib";
           '';
         };
       }
