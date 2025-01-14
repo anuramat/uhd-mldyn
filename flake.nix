@@ -32,7 +32,7 @@
                 jupyter
                 nbclassic # for jupynium
                 jupytext
-                jupyter-collaboration
+                # jupyter-collaboration
                 numpy
                 scipy
                 scikit-learn
