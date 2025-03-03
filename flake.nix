@@ -30,9 +30,7 @@
               python-pkgs: with python-pkgs; [
                 pip
                 jupyter
-                nbclassic # for jupynium
                 jupytext
-                # jupyter-collaboration
                 numpy
                 scipy
                 scikit-learn
