@@ -1,17 +1,19 @@
 # ---
 # jupyter:
 #   jupytext:
+#     formats: ipynb,py:percent
 #     text_representation:
 #       extension: .py
-#       format_name: light
-#       format_version: '1.5'
-#       jupytext_version: 1.16.4
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.7
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
 
+# %%
 from torchdyn.core import NeuralODE
 import numpy as np
 import matplotlib.pyplot as plt
@@ -21,13 +23,17 @@ import torch.utils.data as data
 import torch.nn as nn
 import pytorch_lightning as pl
 
+# %%
 device = torch.device("cuda:0")
 torch.set_default_dtype(torch.float64)
 torch.set_float32_matmul_precision("high")
 
 
+# %%
 def plot_l63(data, n, style="scatter"):
-    x, y, z = data[:n, :].T
+    if n > 0:
+        data = data[:n, :]
+    x, y, z = data.T
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111, projection="3d")
     if style == "scatter":
@@ -43,6 +49,7 @@ def plot_l63(data, n, style="scatter"):
     plt.show()
 
 
+# %%
 def get_loader(
     train_file: str,
     test_file: str,
@@ -60,11 +67,12 @@ def get_loader(
         plot_l63(train, n=-1, style="line")
     train = data.TensorDataset(X, Y)
     trainloader = data.DataLoader(
-        train, batch_size=len(X), shuffle=True, num_workers=-1
+        train, batch_size=len(X), shuffle=True, num_workers=16
     )
     return trainloader
 
 
+# %%
 def get_loader_l63():
     return get_loader(
         train_file="lorenz63_on0.05_train.npy",
@@ -72,6 +80,15 @@ def get_loader_l63():
     )
 
 
+# %%
+def get_loader_l96():
+    return get_loader(
+        train_file="lorenz96_on0.05_train.npy",
+        test_file="lorenz96_test.npy",
+    )
+
+
+# %%
 class Learner_l63(pl.LightningModule):
     def __init__(self, t_span: torch.Tensor, model: nn.Module):
         super().__init__()
@@ -96,6 +113,7 @@ class Learner_l63(pl.LightningModule):
         return self.trainloader
 
 
+# %%
 def get_model_l63():
     layers = [
         nn.Linear(3, 64),
@@ -105,34 +123,30 @@ def get_model_l63():
         nn.Linear(64, 3),
     ]
     f = nn.Sequential(*layers)
-    model = NeuralODE(f).to(device)
+    model = NeuralODE(f)
     t_span = torch.linspace(0, 1, 2)  # [0,1]
     return t_span, model
 
 
-def train():
-    learn = Learner_l63(*get_model_l63())
-    # trainer = pl.Trainer(min_epochs=200, max_epochs=250)
-    trainer = pl.Trainer(max_epochs=50)
-    trainer.fit(learn)
+# %%
+model = Learner_l63(*get_model_l63())
+trainer = pl.Trainer(max_epochs=50, accelerator="gpu", devices="auto")
+trainer.fit(model)
+
+# %%
+model(torch.Tensor([1, 1, 1]))[1][-1, :]
 
 
-def get_loader_l96():
-    return get_loader(
-        train_file="lorenz96_on0.05_train.npy",
-        test_file="lorenz96_test.npy",
-    )
+# %%
+def iterate(model, start, n):
+    x = torch.Tensor(start)
+    traj = []
+    with torch.no_grad():
+        for _ in range(n):
+            x = model(x)[1][-1, :]
+            traj.append(x.numpy())
+    return np.vstack(traj)
 
 
-def main():
-    # train()
-
-    path = ("lightning_logs/version_15/checkpoints/epoch=49-step=50.ckpt",)
-    model = Learner_l63.load_from_checkpoint(path)
-    model.eval().to("cpu")
-    y_hat = model(torch.Tensor([1, 1, 1]))
-    print(y_hat)
-
-
-if __name__ == "__main__":
-    main()
+# %%
+plot_l63(iterate(model, [1, 1, 1], 1000), -1, "line")
