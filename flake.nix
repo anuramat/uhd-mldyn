@@ -1,7 +1,7 @@
 {
   inputs = {
     nixpkgs = {
-      url = "github:nixos/nixpkgs/nixos-unstable";
+      url = "github:nixos/nixpkgs/release-24.11";
     };
     flake-utils = {
       url = "github:numtide/flake-utils";
@@ -20,6 +20,8 @@
           inherit system;
           config = {
             allowUnfree = true;
+            cudaSupport = true;
+            cudnnSupoprt = true;
           };
         };
       in
@@ -31,13 +33,8 @@
                 pip
                 jupyter
                 jupytext
-                numpy
-                scipy
-                scikit-learn
-                matplotlib
-                tqdm
-                pytest
-                pytorch
+                torch-bin
+                jupyter-collaboration
               ]
             ))
           ];
