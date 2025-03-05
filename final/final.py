@@ -21,8 +21,9 @@ import torch.utils.data as data
 import torch.nn as nn
 import pytorch_lightning as pl
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print(device)
+device = torch.device("cuda:0")
+torch.set_default_dtype(torch.float64)
+torch.set_float32_matmul_precision("high")
 
 
 def plot_l63(data, n, style="scatter"):
@@ -59,7 +60,7 @@ def get_loader(
         plot_l63(train, n=-1, style="line")
     train = data.TensorDataset(X, Y)
     trainloader = data.DataLoader(
-        train, batch_size=len(X), shuffle=True, num_workers=31
+        train, batch_size=len(X), shuffle=True, num_workers=-1
     )
     return trainloader
 
@@ -85,10 +86,11 @@ class Learner_l63(pl.LightningModule):
         t_eval, y_hat = self.model(x, self.t_span)
         y_hat = y_hat[-1]  # select last point of solution trajectory
         loss = nn.MSELoss()(y_hat, y)
+        print(loss)
         return {"loss": loss}
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.model.parameters(), lr=0.01)
+        return torch.optim.Adam(self.model.parameters(), lr=3e-4)
 
     def train_dataloader(self):
         return self.trainloader
@@ -100,28 +102,18 @@ def get_model_l63():
         nn.ReLU(),
         nn.Linear(64, 64),
         nn.ReLU(),
-        nn.Linear(64, 64),
-        nn.ReLU(),
-        nn.Linear(64, 64),
-        nn.ReLU(),
         nn.Linear(64, 3),
     ]
     f = nn.Sequential(*layers)
-    model = NeuralODE(
-        f,
-        sensitivity="adjoint",
-        solver="tsit5",
-        interpolator=None,
-        atol=1e-3,
-        rtol=1e-3,
-    ).to(device)
+    model = NeuralODE(f).to(device)
     t_span = torch.linspace(0, 1, 2)  # [0,1]
     return t_span, model
 
 
 def train():
     learn = Learner_l63(*get_model_l63())
-    trainer = pl.Trainer(min_epochs=200, max_epochs=250)
+    # trainer = pl.Trainer(min_epochs=200, max_epochs=250)
+    trainer = pl.Trainer(max_epochs=50)
     trainer.fit(learn)
 
 
@@ -133,7 +125,13 @@ def get_loader_l96():
 
 
 def main():
-    train()
+    # train()
+
+    path = ("lightning_logs/version_15/checkpoints/epoch=49-step=50.ckpt",)
+    model = Learner_l63.load_from_checkpoint(path)
+    model.eval().to("cpu")
+    y_hat = model(torch.Tensor([1, 1, 1]))
+    print(y_hat)
 
 
 if __name__ == "__main__":
