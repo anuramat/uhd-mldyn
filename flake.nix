@@ -45,11 +45,9 @@
             # Tells pip to put packages into $PIP_PREFIX instead of the usual locations.
             # See https://pip.pypa.io/en/stable/topics/configuration/
             export PIP_PREFIX=$(realpath -m "''${XDG_CACHE_HOME:-$HOME/.cache}/flake_pip/$(pwd)/")
-            export PYTHONPATH="$PIP_PREFIX/${pkgs.python3.sitePackages}:$PYTHONPATH"
-            export PATH="$PIP_PREFIX/bin:$PATH"
+            export PYTHONPATH="$PIP_PREFIX/${pkgs.python3.sitePackages}''${PYTHONPATH:+:$PYTHONPATH}"
+            export PATH="$PIP_PREFIX/bin:''${PATH:+:$PATH}"
             unset SOURCE_DATE_EPOCH
-            # for jupynium
-            export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib";
           '';
         };
       }
