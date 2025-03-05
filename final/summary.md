@@ -4,7 +4,7 @@ title: Dynamical Systems Theory in Machine Learning & Data Science
 subtitle: "Final Project: Neural ODEs"
 ---
 
-## Theoretical background [^1]
+## Introduction [^1]
 
 Neural ODEs are an architecture introduced as an attempt to mitigate multiple
 shortcomings of older models such as residual networks, recurrent neural
