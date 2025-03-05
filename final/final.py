@@ -45,7 +45,8 @@ def plot_l63(data, n, style="scatter"):
 def get_loader(
     train_file: str,
     test_file: str,
-    l63: bool,
+    plot: bool = False,
+    name: str = "",
 ):
     train = np.load(train_file)
     test = np.load(test_file)
@@ -53,7 +54,7 @@ def get_loader(
     X = torch.Tensor(train[:-1, :])
     Y = torch.Tensor(train[1:, :])
     print(f"train shapes -- x: {X.shape}, y: {Y.shape}")
-    if l63:
+    if plot and name == "l63":
         plot_l63(train, n=1000)
         plot_l63(train, n=-1, style="line")
     train = data.TensorDataset(X, Y)
@@ -65,7 +66,8 @@ def get_loader(
 
 def get_loader_l63():
     return get_loader(
-        train_file="lorenz63_on0.05_train.npy", test_file="lorenz63_test.npy", l63=True
+        train_file="lorenz63_on0.05_train.npy",
+        test_file="lorenz63_test.npy",
     )
 
 
@@ -125,5 +127,14 @@ def train():
 
 def get_loader_l96():
     return get_loader(
-        train_file="lorenz96_on0.05_train.npy", test_file="lorenz96_test.npy", l63=False
+        train_file="lorenz96_on0.05_train.npy",
+        test_file="lorenz96_test.npy",
     )
+
+
+def main():
+    train()
+
+
+if __name__ == "__main__":
+    main()
