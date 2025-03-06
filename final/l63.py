@@ -16,6 +16,7 @@
 # %%
 import utils
 from torchdyn.core import NeuralODE
+import numpy as np
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
@@ -63,12 +64,15 @@ trainer.fit(model)
 
 # %%
 n_timesteps = 5000
-preds = utils.make_trajectory(model, [1, 1, 1], n_timesteps=n_timesteps)
-real = utils.get_data_l63()[0][:n_timesteps, :]
+pred = utils.make_trajectory(model, [1, 1, 1], n_timesteps=n_timesteps)
+real = utils.get_data_l63()[0][:n_timesteps, :].numpy()
 utils.plot_l63(real, title="data", style="scatter")
 utils.plot_l63(real, title="data", style="line")
-utils.plot_l63(preds, title="generated trajectory", style="scatter")
-utils.plot_l63(preds, title="generated trajectory", style="line")
+utils.plot_l63(pred, title="generated trajectory", style="scatter")
+utils.plot_l63(pred, title="generated trajectory", style="line")
 
 # %%
-print(psd.power_spectrum_error(preds, real))
+print(
+    psd.power_spectrum_error(np.expand_dims(pred, axis=0), np.expand_dims(real, axis=0))
+)
+
