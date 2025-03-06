@@ -30,11 +30,11 @@ torch.set_float32_matmul_precision("high")
 
 
 # %%
-def plot_l63(data, n, style="scatter"):
-    if n > 0:
-        data = data[:n, :]
-    else:
+def plot_l63(data, title=None, n=None, style=None):
+    if n is None:
         n = data.shape[0]
+    data = data[:n, :]
+
     x, y, z = data.T
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111, projection="3d")
@@ -44,10 +44,15 @@ def plot_l63(data, n, style="scatter"):
         ax.plot(x, y, z, lw=0.3)
     else:
         raise ValueError
+
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
     ax.set_zlabel("Z")
-    ax.set_title(f"L63, {n} points")
+
+    if title is None:
+        raise ValueError
+    ax.set_title(f"{title}: Lorenz63, {data.shape[0]} points")
+
     plt.show()
 
 
@@ -57,7 +62,7 @@ def get_loader(
     test_file: str,
     plot: bool = False,
     name: str = "",
-    n_points: int = 1000,
+    n_points=None,
     lag=1,
 ):
     traintensor = np.load(train_file)
@@ -67,8 +72,10 @@ def get_loader(
     Y = torch.Tensor(traintensor[lag:, :])
     print(f"train shapes -- x: {X.shape}, y: {Y.shape}")
     if plot and name == "l63":
-        plot_l63(traintensor, n=n_points)
-        plot_l63(traintensor, n=n_points, style="line")
+        if n_points is None:
+            raise ValueError
+        plot_l63(data=traintensor, n=n_points, title="training data", style="scatter")
+        plot_l63(data=traintensor, n=n_points, title="training data", style="line")
     traintensor = data.TensorDataset(X, Y)
     trainloader = data.DataLoader(
         traintensor, batch_size=len(X), shuffle=True, num_workers=0
@@ -77,7 +84,7 @@ def get_loader(
 
 
 # %%
-def get_loader_l63(plot=False, n_points=1000):
+def get_loader_l63(plot=False, n_points=None):
     return get_loader(
         train_file="lorenz63_on0.05_train.npy",
         test_file="lorenz63_test.npy",
@@ -153,18 +160,18 @@ trainer.fit(model)
 
 
 # %%
-def make_trajectory(model, start, n):
+def make_trajectory(model, start, n_timesteps):
     x = torch.Tensor(start)
     with torch.no_grad():
-        _, traj = model(x, torch.linspace(0, n, 2))
+        _, traj = model.model(x, torch.range(0, n_timesteps - 1))
         return traj.numpy()
 
 
 # %%
-n_points = 5000
-preds = make_trajectory(model, [1, 1, 1], n_points)
-get_loader_l63(True, n_points=n_points)
-plot_l63(preds, -1, "scatter")
-plot_l63(preds, -1, "line")
+n_timesteps = 5000
+preds = make_trajectory(model, [1, 1, 1], n_timesteps=n_timesteps)
+get_loader_l63(True, n_points=n_timesteps)
+plot_l63(preds, title="generated trajectory", style="scatter")
+plot_l63(preds, title="generated trajectory", style="line")
 
 # %%
