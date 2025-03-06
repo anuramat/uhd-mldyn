@@ -33,6 +33,8 @@ torch.set_float32_matmul_precision("high")
 def plot_l63(data, n, style="scatter"):
     if n > 0:
         data = data[:n, :]
+    else:
+        n = data.shape[0]
     x, y, z = data.T
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111, projection="3d")
@@ -56,12 +58,13 @@ def get_loader(
     plot: bool = False,
     name: str = "",
     n_points: int = 1000,
+    lag=1,
 ):
     traintensor = np.load(train_file)
     test = np.load(test_file)
     print(f"raw data shapes -- train: {traintensor.shape}, test: {test.shape}")
-    X = torch.Tensor(traintensor[:-1, :])
-    Y = torch.Tensor(traintensor[1:, :])
+    X = torch.Tensor(traintensor[:-lag, :])
+    Y = torch.Tensor(traintensor[lag:, :])
     print(f"train shapes -- x: {X.shape}, y: {Y.shape}")
     if plot and name == "l63":
         plot_l63(traintensor, n=n_points)
@@ -137,15 +140,21 @@ def get_model_l63():
         nn.Linear(128, 3),
     ]
     f = nn.Sequential(*layers)
-    model = NeuralODE(f)
-    t_span = torch.linspace(0, 1, 2)  # [0,1]
-    return t_span, model
+    model = NeuralODE(f, sensitivity="adjoint", solver="dopri5")
+    # dopri5 works well for some reason
+    # tsitouras45 is default but it sucks
+    return model
 
 
 # %%
-model = Learner_l63(*get_model_l63(), lr=1e-2)
-trainer = pl.Trainer(max_epochs=1000, accelerator="gpu", devices="auto")
+model = Learner_l63(model=get_model_l63(), t_span=torch.linspace(0, 1, 3), lr=1e-2)
+trainer = pl.Trainer(max_epochs=50, accelerator="gpu", devices="auto")
 trainer.fit(model)
+
+
+# %%
+print(model(torch.Tensor([1, 1, 1]))[1].shape[0])
+# for some reason this doesn't care about t_span
 
 
 # %%
