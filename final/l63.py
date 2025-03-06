@@ -61,9 +61,11 @@ trainer.fit(model)
 # %%
 n_timesteps = 5000
 preds = utils.make_trajectory(model, [1, 1, 1], n_timesteps=n_timesteps)
-utils.plot_l63(utils.get_train_loader
+real = utils.get_data_l63()
+utils.plot_l63(real, title="data", style="scatter")
+utils.plot_l63(real, title="data", style="line")
 utils.plot_l63(preds, title="generated trajectory", style="scatter")
 utils.plot_l63(preds, title="generated trajectory", style="line")
 
 # %%
-psd.power_spectrum_error(preds,trai
+print(psd.power_spectrum_error(preds, real[: len(preds)]))
