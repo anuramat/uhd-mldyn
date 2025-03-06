@@ -20,6 +20,9 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import psd
+from importlib import reload
+
+utils = reload(utils)
 
 # %%
 device = torch.device("cuda:0")
@@ -61,11 +64,11 @@ trainer.fit(model)
 # %%
 n_timesteps = 5000
 preds = utils.make_trajectory(model, [1, 1, 1], n_timesteps=n_timesteps)
-real = utils.get_data_l63()
+real = utils.get_data_l63()[0][:n_timesteps, :]
 utils.plot_l63(real, title="data", style="scatter")
 utils.plot_l63(real, title="data", style="line")
 utils.plot_l63(preds, title="generated trajectory", style="scatter")
 utils.plot_l63(preds, title="generated trajectory", style="line")
 
 # %%
-print(psd.power_spectrum_error(preds, real[: len(preds)]))
+print(psd.power_spectrum_error(preds, real))

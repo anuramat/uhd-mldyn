@@ -71,7 +71,7 @@ def get_loader_l96():
 def make_trajectory(model, start, n_timesteps):
     x = torch.Tensor(start)
     with torch.no_grad():
-        _, traj = model.model(x, torch.arange(0, n_timesteps))
+        _, traj = model.model(x, torch.linspace(0, n_timesteps - 1, n_timesteps))
         return traj.numpy()
 
 
