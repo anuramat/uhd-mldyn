@@ -147,15 +147,13 @@ def get_model_l63():
         nn.Linear(128, 3),
     ]
     f = nn.Sequential(*layers)
-    model = NeuralODE(f, sensitivity="adjoint", solver="dopri5")
-    # dopri5 works well for some reason
-    # tsitouras45 is default but it sucks
+    model = NeuralODE(f, sensitivity="adjoint")
     return model
 
 
 # %%
 model = Learner_l63(model=get_model_l63(), t_span=torch.linspace(0, 1, 2), lr=1e-2)
-trainer = pl.Trainer(max_epochs=50, accelerator="gpu", devices="auto")
+trainer = pl.Trainer(max_epochs=100, accelerator="gpu", devices="auto")
 trainer.fit(model)
 
 
