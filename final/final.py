@@ -55,28 +55,32 @@ def get_loader(
     test_file: str,
     plot: bool = False,
     name: str = "",
+    n_points: int = 1000,
 ):
-    train = np.load(train_file)
+    traintensor = np.load(train_file)
     test = np.load(test_file)
-    print(f"raw data shapes -- train: {train.shape}, test: {test.shape}")
-    X = torch.Tensor(train[:-1, :])
-    Y = torch.Tensor(train[1:, :])
+    print(f"raw data shapes -- train: {traintensor.shape}, test: {test.shape}")
+    X = torch.Tensor(traintensor[:-1, :])
+    Y = torch.Tensor(traintensor[1:, :])
     print(f"train shapes -- x: {X.shape}, y: {Y.shape}")
     if plot and name == "l63":
-        plot_l63(train, n=1000)
-        plot_l63(train, n=-1, style="line")
-    train = data.TensorDataset(X, Y)
+        plot_l63(traintensor, n=n_points)
+        plot_l63(traintensor, n=n_points, style="line")
+    traintensor = data.TensorDataset(X, Y)
     trainloader = data.DataLoader(
-        train, batch_size=len(X), shuffle=True, num_workers=16
+        traintensor, batch_size=len(X), shuffle=True, num_workers=0
     )
     return trainloader
 
 
 # %%
-def get_loader_l63():
+def get_loader_l63(plot=False, n_points=1000):
     return get_loader(
         train_file="lorenz63_on0.05_train.npy",
         test_file="lorenz63_test.npy",
+        plot=plot,
+        n_points=n_points,
+        name="l63",
     )
 
 
@@ -90,10 +94,11 @@ def get_loader_l96():
 
 # %%
 class Learner_l63(pl.LightningModule):
-    def __init__(self, t_span: torch.Tensor, model: nn.Module):
+    def __init__(self, t_span: torch.Tensor, model: nn.Module, lr: float):
         super().__init__()
         self.model, self.t_span = model, t_span
         self.trainloader = get_loader_l63()
+        self.starting_lr = lr
 
     def forward(self, x):
         return self.model(x)
@@ -103,11 +108,14 @@ class Learner_l63(pl.LightningModule):
         t_eval, y_hat = self.model(x, self.t_span)
         y_hat = y_hat[-1]  # select last point of solution trajectory
         loss = nn.MSELoss()(y_hat, y)
-        print(loss)
-        return {"loss": loss}
+        print(f"loss: {loss}, lr: {self.optimizers().param_groups[0]['lr']}")
+        self.log("loss", loss)
+        return loss
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.model.parameters(), lr=3e-4)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.starting_lr)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
+        return {"optimizer": optimizer, "lr_scheduler": scheduler, "monitor": "loss"}
 
     def train_dataloader(self):
         return self.trainloader
@@ -116,11 +124,17 @@ class Learner_l63(pl.LightningModule):
 # %%
 def get_model_l63():
     layers = [
-        nn.Linear(3, 64),
+        nn.Linear(3, 128),
         nn.ReLU(),
-        nn.Linear(64, 64),
+        nn.Linear(128, 128),
         nn.ReLU(),
-        nn.Linear(64, 3),
+        nn.Linear(128, 128),
+        nn.ReLU(),
+        nn.Linear(128, 128),
+        nn.ReLU(),
+        nn.Linear(128, 128),
+        nn.ReLU(),
+        nn.Linear(128, 3),
     ]
     f = nn.Sequential(*layers)
     model = NeuralODE(f)
@@ -129,12 +143,9 @@ def get_model_l63():
 
 
 # %%
-model = Learner_l63(*get_model_l63())
-trainer = pl.Trainer(max_epochs=50, accelerator="gpu", devices="auto")
+model = Learner_l63(*get_model_l63(), lr=1e-2)
+trainer = pl.Trainer(max_epochs=1000, accelerator="gpu", devices="auto")
 trainer.fit(model)
-
-# %%
-model(torch.Tensor([1, 1, 1]))[1][-1, :]
 
 
 # %%
@@ -149,4 +160,8 @@ def iterate(model, start, n):
 
 
 # %%
-plot_l63(iterate(model, [1, 1, 1], 1000), -1, "line")
+n_points = 5000
+preds = iterate(model, [1, 1, 1], n_points)
+get_loader_l63(True, n_points=n_points)
+plot_l63(preds, -1, "scatter")
+plot_l63(preds, -1, "line")
