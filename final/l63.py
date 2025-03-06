@@ -14,11 +14,12 @@
 # ---
 
 # %%
-from . import utils
+import utils
 from torchdyn.core import NeuralODE
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
+import psd
 
 # %%
 device = torch.device("cuda:0")
@@ -60,6 +61,9 @@ trainer.fit(model)
 # %%
 n_timesteps = 5000
 preds = utils.make_trajectory(model, [1, 1, 1], n_timesteps=n_timesteps)
-utils.get_loader_l63(True, n_points=n_timesteps)
+utils.plot_l63(utils.get_train_loader
 utils.plot_l63(preds, title="generated trajectory", style="scatter")
 utils.plot_l63(preds, title="generated trajectory", style="line")
+
+# %%
+psd.power_spectrum_error(preds,trai

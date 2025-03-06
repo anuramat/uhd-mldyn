@@ -6,29 +6,31 @@ import torch.nn as nn
 import torch.utils.data as data
 
 
-def get_loader(
-    train_file: str,
-    test_file: str,
-    plot: bool = False,
-    name: str = "",
-    n_points=None,
+load = lambda x: torch.Tensor(np.load(x))
+
+
+def get_data_l63():
+    train = load("lorenz63_on0.05_train.npy")
+    test = load("lorenz63_test.npy")
+    return train, test
+
+
+def get_data_l96():
+    train = load("lorenz96_on0.05_train.npy")
+    test = load("lorenz96_test.npy")
+    return train, test
+
+
+def get_train_loader(
+    train,
     lag=1,
 ):
-    traintensor = np.load(train_file)
-    test = np.load(test_file)
-    print(f"raw data shapes -- train: {traintensor.shape}, test: {test.shape}")
-    X = torch.Tensor(traintensor[:-lag, :])
-    Y = torch.Tensor(traintensor[lag:, :])
-    print(f"train shapes -- x: {X.shape}, y: {Y.shape}")
-    if plot and name == "l63":
-        if n_points is None:
-            raise ValueError
-        plot_l63(data=traintensor, n=n_points, title="training data", style="scatter")
-        plot_l63(data=traintensor, n=n_points, title="training data", style="line")
-    traintensor = data.TensorDataset(X, Y)
-    trainloader = data.DataLoader(
-        traintensor, batch_size=len(X), shuffle=True, num_workers=0
-    )
+    print(f"raw data shape -- {train.shape}")
+    X = train[:-lag, :]
+    Y = train[lag:, :]
+    print(f"shifted tensors shape -- x: {X.shape}, y: {Y.shape}")
+    train = data.TensorDataset(X, Y)
+    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=True, num_workers=0)
     return trainloader
 
 
@@ -58,27 +60,18 @@ def plot_l63(data, title=None, n=None, style=None):
     plt.show()
 
 
-def get_loader_l63(plot=False, n_points=None):
-    return get_loader(
-        train_file="lorenz63_on0.05_train.npy",
-        test_file="lorenz63_test.npy",
-        plot=plot,
-        n_points=n_points,
-        name="l63",
-    )
+def get_loader_l63():
+    return get_train_loader(get_data_l63()[0])
 
 
 def get_loader_l96():
-    return get_loader(
-        train_file="lorenz96_on0.05_train.npy",
-        test_file="lorenz96_test.npy",
-    )
+    return get_train_loader(get_data_l96()[0])
 
 
 def make_trajectory(model, start, n_timesteps):
     x = torch.Tensor(start)
     with torch.no_grad():
-        _, traj = model.model(x, torch.range(0, n_timesteps - 1))
+        _, traj = model.model(x, torch.arange(0, n_timesteps))
         return traj.numpy()
 
 
@@ -95,7 +88,7 @@ class Learner(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        t_eval, y_hat = self.model(x, self.t_span)
+        _, y_hat = self.model(x, self.t_span)
         y_hat = y_hat[-1]  # select last point of solution trajectory
         loss = nn.MSELoss()(y_hat, y)
         print(f"loss: {loss}, lr: {self.optimizers().param_groups[0]['lr']}")
