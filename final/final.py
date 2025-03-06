@@ -147,14 +147,9 @@ def get_model_l63():
 
 
 # %%
-model = Learner_l63(model=get_model_l63(), t_span=torch.linspace(0, 1, 3), lr=1e-2)
+model = Learner_l63(model=get_model_l63(), t_span=torch.linspace(0, 1, 2), lr=1e-2)
 trainer = pl.Trainer(max_epochs=50, accelerator="gpu", devices="auto")
 trainer.fit(model)
-
-
-# %%
-print(model(torch.Tensor([1, 1, 1]))[1].shape[0])
-# for some reason this doesn't care about t_span
 
 
 # %%
