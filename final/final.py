@@ -153,19 +153,16 @@ trainer.fit(model)
 
 
 # %%
-def iterate(model, start, n):
+def make_trajectory(model, start, n):
     x = torch.Tensor(start)
-    traj = []
     with torch.no_grad():
-        for _ in range(n):
-            x = model(x)[1][-1, :]
-            traj.append(x.numpy())
-    return np.vstack(traj)
+        _, traj = model(x, torch.linspace(0, n, 2))
+        return traj.numpy()
 
 
 # %%
 n_points = 5000
-preds = iterate(model, [1, 1, 1], n_points)
+preds = make_trajectory(model, [1, 1, 1], n_points)
 get_loader_l63(True, n_points=n_points)
 plot_l63(preds, -1, "scatter")
 plot_l63(preds, -1, "line")
