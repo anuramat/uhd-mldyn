@@ -43,3 +43,14 @@ The resulting approach has several benefits:
   fixed, thus we can naturally incorporate data which arrives at arbitrary times
 
 [^1]: ["Neural Ordinary Differential Equations", RTQ Chen et al.](https://doi.org/10.48550/arXiv.1806.07366)
+
+## Experiment
+
+### Lorenz63
+
+- system definition
+- significance
+- nn arch
+- solver
+- training scheme
+- spectrum
