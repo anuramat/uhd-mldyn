@@ -165,3 +165,5 @@ preds = iterate(model, [1, 1, 1], n_points)
 get_loader_l63(True, n_points=n_points)
 plot_l63(preds, -1, "scatter")
 plot_l63(preds, -1, "line")
+
+# %%
