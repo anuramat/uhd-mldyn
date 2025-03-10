@@ -70,9 +70,3 @@ utils.plot_l63(real, title="data", style="scatter")
 utils.plot_l63(real, title="data", style="line")
 utils.plot_l63(pred, title="generated trajectory", style="scatter")
 utils.plot_l63(pred, title="generated trajectory", style="line")
-
-# %%
-print(
-    psd.power_spectrum_error(np.expand_dims(pred, axis=0), np.expand_dims(real, axis=0))
-)
-
